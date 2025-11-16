@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles/reset.css">
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/static/js/main.js" type="module"></script>
+    <title>Wheel Of Fortune</title>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <img
+                class="header__logo"
+                src="/static/images/logo.png"
+                alt="Biomirix"
+            >
+        </header>
+
+        <main class="main">
+            <div class="wheel-container">
+                <div class="wheel">
+                    <div class="wheel__sectors-container">
+                        <div class="wheel__sector" style="--i:1;--clr:#00446f;"></div>
+                        <div class="wheel__sector" style="--i:2;--clr:#ed7102;"></div>
+                        <div class="wheel__sector" style="--i:3;--clr:#ffffff;"></div>
+                        <div class="wheel__sector" style="--i:4;--clr:#00446f;"></div>
+                        <div class="wheel__sector" style="--i:5;--clr:#ed7102;"></div>
+                        <div class="wheel__sector" style="--i:6;--clr:#ffffff;"></div>
+                        <div class="wheel__sector" style="--i:7;--clr:#00446f;"></div>
+                        <div class="wheel__sector" style="--i:8;--clr:#ed7102;"></div>
+                        <div class="wheel__sector" style="--i:9;--clr:#ffffff;"></div>
+                    </div>
+
+                    <div class="wheel__pointer">
+                        <div class="pointer__body">
+                            <div class="pointer__center-decoration"></div>
+                        </div>
+
+                        <div class="pointer__arrow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="spin-btn">Крутить</button>
+        </main>
+    </div>
+
+    <div class="modal-overlay">
+        <div class="modal">
+            <div class="modal__content"></div>
+            <div class="modal__close-btn">
+                Закрыть
+            </div>
+        </div>
+    </div>
+</body>
+</html>
