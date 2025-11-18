@@ -24,14 +24,9 @@ MESSAGE_IF_NOT_SUBSCRIBED = (
 
 router_handlers = Router()
 
-DEBUG = False
-
 @router_handlers.message(Command('start'))
 @check_subscription(chat_id = settings.CHAT_ID)
 async def handle_start(message: Message, is_subscribed) -> None:
-    if DEBUG:
-        is_subscribed = False
-
     if is_subscribed:
         await message.answer(
             text = BASE_MESSAGE,
@@ -53,9 +48,6 @@ async def handle_start(message: Message, is_subscribed) -> None:
 @check_subscription(chat_id = settings.CHAT_ID)
 async def handle_callback_query(callback_query: CallbackQuery, is_subscribed):
     await callback_query.answer()
-
-    if DEBUG:
-        is_subscribed = False
 
     if is_subscribed:
         await callback_query.message.answer(
