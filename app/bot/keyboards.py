@@ -11,10 +11,14 @@ def create_mini_app_keyboard() -> InlineKeyboardMarkup:
 
 
 def create_subscribe_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardBuilder().button(
-        text = 'Подписаться',
-        url = 'https://t.me/biomirix'
-    ).button(
-        text = 'Проверить подписку',
-        callback_data = 'check_subscribe'
-    ).as_markup()
+    return (InlineKeyboardBuilder()
+        .button(
+            text = 'Подписаться',
+            url = 'https://t.me/biomirix'
+        ).button(
+            text = 'Начать розыгрыш',
+            callback_data = 'start_draw'
+        )
+        .adjust(1)
+        .as_markup()
+    )

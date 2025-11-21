@@ -11,7 +11,7 @@ class Player(Base):
     __tablename__ = 'players'
 
     telegram_id: Mapped[int] = mapped_column(unique = True)
-    username: Mapped[str] = mapped_column(String(255), unique = True)
+    username: Mapped[str] = mapped_column(String(255), unique = True, nullable = True)
     prize_id: Mapped[int] = mapped_column(ForeignKey('prizes.id'), nullable = True)
     has_spun: Mapped[bool] = mapped_column(default = False)
 

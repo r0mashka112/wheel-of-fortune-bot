@@ -19,7 +19,8 @@ MESSAGE_IF_SUBSCRIBED = (
 )
 
 MESSAGE_IF_NOT_SUBSCRIBED = (
-    'Для запуска колеса фортуны нужно подписаться на наш канал'
+    'Для <strong>участия</strong> в розыгрыше нужно '
+    '<strong>подписаться</strong> на наш Telegram канал'
 )
 
 router_handlers = Router()
@@ -40,11 +41,12 @@ async def handle_start(message: Message, is_subscribed) -> None:
     else:
         await message.answer(
             text = MESSAGE_IF_NOT_SUBSCRIBED,
-            reply_markup = create_subscribe_keyboard()
+            reply_markup = create_subscribe_keyboard(),
+            parse_mode = 'HTML'
         )
 
 
-@router_handlers.callback_query(F.data == 'check_subscribe')
+@router_handlers.callback_query(F.data == 'start_draw')
 @check_subscription(chat_id = settings.CHAT_ID)
 async def handle_callback_query(callback_query: CallbackQuery, is_subscribed):
     await callback_query.answer()
@@ -61,5 +63,6 @@ async def handle_callback_query(callback_query: CallbackQuery, is_subscribed):
         )
     else:
         await callback_query.message.answer(
-            text = MESSAGE_IF_NOT_SUBSCRIBED
+            text = MESSAGE_IF_NOT_SUBSCRIBED,
+            parse_mode = 'HTML'
         )

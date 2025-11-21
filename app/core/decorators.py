@@ -4,6 +4,9 @@ from functools import wraps
 from typing import Callable
 from fastapi import HTTPException
 
+from aiogram import Bot
+from aiogram.types import Message
+
 from sqlalchemy.exc import (
     NoResultFound,
     IntegrityError,
@@ -73,9 +76,6 @@ def handle_db_errors(func):
 
     return wrapper
 
-
-from aiogram import Bot
-from aiogram.types import Message
 
 def check_subscription(chat_id: int):
     def decorator(handler: Callable):

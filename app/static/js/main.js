@@ -1,21 +1,21 @@
 import { spinWheel } from "/static/js/spin.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const spinBtn = document.querySelector(".spin-btn");
-
     const tg = window.Telegram.WebApp;
 
     tg.ready();
     tg.expand();
 
-    const user = tg.initDataUnsafe.user;
+    const player = tg.initDataUnsafe.user;
 
-    if (user && user.username) {
+    if (player) {
+        const spinBtn = document.querySelector(".spin-btn");
+
         spinBtn.onclick = async () => {
             try {
                 const result = await spinWheel({
-                    telegram_id: user.id,
-                    username: user.username
+                    telegram_id: player.id,
+                    username: player.username
                 });
 
                 const modalOverlay = document.querySelector('.modal-overlay');
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            telegram_id: user.id,
+                            telegram_id: player.id,
                             prize: result.success.prize
                         })
                     });
