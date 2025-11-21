@@ -1,7 +1,8 @@
 import { spinWheel } from "/static/js/spin.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const tg = window.Telegram.WebApp;
+    const spinBtn = document.querySelector(".spin-btn");
+    const tg = Telegram.WebApp;
 
     tg.ready();
     tg.expand();
@@ -9,8 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const player = tg.initDataUnsafe.user;
 
     if (player) {
-        const spinBtn = document.querySelector(".spin-btn");
-
         spinBtn.onclick = async () => {
             try {
                 const result = await spinWheel({

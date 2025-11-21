@@ -22,7 +22,7 @@ config = context.config
 
 config.set_main_option(
     "sqlalchemy.url",
-    settings.DATABASE_URL_AIOMYSQL
+    settings.DATABASE_URL_AIOMYSQL + '?async_fallback=True'
 )
 
 # Interpret the config file for Python logging.
