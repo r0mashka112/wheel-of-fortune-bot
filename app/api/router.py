@@ -1,10 +1,11 @@
 from fastapi.requests import Request
 from fastapi import APIRouter, HTTPException
 
-
 from app.bot.bot import bot
 from app.api.dao import PlayerDAO
-from app.services.wheel_service import WheelService
+from app.services.WheelService import WheelService
+
+from app.services.MessageHistoryService import message_history_service
 
 api_router = APIRouter(prefix = '/api', tags = ['API'])
 
@@ -57,24 +58,31 @@ async def spin_result(request: Request):
     if not telegram_id or not prize:
         return {"status": "error", "message": "Invalid data"}
 
+    await message_history_service.delete_messages(
+        chat_id = telegram_id,
+        bot = bot,
+        start = 1
+    )
+
     try:
-        await bot.send_message(
+        msg_1 = await bot.send_message(
             chat_id = telegram_id,
             text = "✨ Спасибо за участие в розыгрыше Biomirix!",
             parse_mode="HTML"
         )
-        await bot.send_message(
+
+        msg_2 = await bot.send_message(
             chat_id = telegram_id,
             text = f"Ваш приз: <strong>{prize}</strong>",
             parse_mode = "HTML"
         )
 
-        await bot.send_message(
+        msg_3 = await bot.send_message(
             chat_id = telegram_id,
             text = "У нас сюрприз: после выставки мы проведём ещё один розыгрыш среди всех новых подписчиков канала!"
         )
 
-        await bot.send_message(
+        msg_4 = await bot.send_message(
             chat_id = telegram_id,
             text = (
                 "Кто сможет участвовать?\n"
@@ -82,9 +90,20 @@ async def spin_result(request: Request):
             )
         )
 
-        await bot.send_message(
+        msg_5 = await bot.send_message(
             chat_id = telegram_id,
             text = "Следите за новостями — выберем победителя на следующей неделе!"
+        )
+
+        await message_history_service.update_by(
+            chat_id = telegram_id,
+            message_ids = [
+                msg_1.message_id,
+                msg_2.message_id,
+                msg_3.message_id,
+                msg_4.message_id,
+                msg_5.message_id
+            ]
         )
     except Exception as error:
         return {"status": "error", "message": str(error)}

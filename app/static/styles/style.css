@@ -1,6 +1,18 @@
 @import "/static/styles/fonts.css";
 
+html, body {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+
     font-family: 'Poppins', sans-serif;
     color: black;
     background-color: #fff;

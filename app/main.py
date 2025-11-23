@@ -17,11 +17,11 @@ from app.pages.router import router_pages
 from app.bot.handlers import router_handlers
 from app.pages.admin import PlayerAdmin, PrizeAdmin
 
-
 logging.basicConfig(
     level = logging.INFO,
     format = '%(asctime)s - %(levelname)s - %(message)s'
 )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

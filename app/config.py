@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASSWORD: str
 
+    REDIS_HOST: str
+
     BOT_TOKEN: str
     BASE_SITE: str
 
@@ -25,6 +27,10 @@ class Settings(BaseSettings):
             f'{self.DB_PORT}/'
             f'{self.DB_NAME}'
         )
+
+    @property
+    def DATABASE_URL_AIOREDIS(self) -> str:
+        return f'redis://{self.REDIS_HOST}'
 
     @property
     def WEBHOOK_URL(self) -> str:

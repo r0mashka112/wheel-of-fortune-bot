@@ -1,5 +1,6 @@
-from app.config import settings
 from aiogram import Bot, Dispatcher
+
+from app.config import settings
 
 bot = Bot(token = settings.BOT_TOKEN)
 
