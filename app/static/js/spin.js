@@ -70,7 +70,7 @@ export const spinWheel = async (player) => {
                     'success': {
                         telegram_id: player.telegram_id,
                         username: player.username,
-                        prize_id: spinResult.prize.id,
+                        prize_id: spinResult.data.prize.id,
                         prize: spinResult.data.prize.name
                     }
                 });

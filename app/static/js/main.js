@@ -14,12 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const showModal = (message) => {
+        modalOverlay.classList.toggle('active');
         modalContent.textContent = message;
-        modalOverlay.classList.add('active');
     };
 
     const hideModal = () => {
-        modalOverlay.classList.remove('active');
+        modalOverlay.classList.toggle('active');
         try { tg.close(); } catch {}
     };
 

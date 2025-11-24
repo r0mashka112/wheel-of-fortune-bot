@@ -1,8 +1,8 @@
-"""Initial revision
+"""empty message
 
-Revision ID: d8ecba4ba548
+Revision ID: fc3a96031a50
 Revises: 
-Create Date: 2025-10-26 03:30:40.930546
+Create Date: 2025-11-25 03:10:29.538553
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd8ecba4ba548'
+revision: str = 'fc3a96031a50'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,9 +31,10 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_table('players',
-    sa.Column('telegram_id', sa.Integer(), nullable=False),
-    sa.Column('username', sa.String(length=255), nullable=False),
-    sa.Column('prize_id', sa.Integer(), nullable=False),
+    sa.Column('telegram_id', sa.BigInteger(), nullable=False),
+    sa.Column('username', sa.String(length=255), nullable=True),
+    sa.Column('prize_id', sa.Integer(), nullable=True),
+    sa.Column('has_spun', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),

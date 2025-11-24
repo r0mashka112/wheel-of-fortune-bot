@@ -1,5 +1,10 @@
 from app.database import Base
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import (
+    String,
+    ForeignKey,
+    BigInteger
+)
+
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -10,7 +15,7 @@ from sqlalchemy.orm import (
 class Player(Base):
     __tablename__ = 'players'
 
-    telegram_id: Mapped[int] = mapped_column(unique = True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique = True)
     username: Mapped[str] = mapped_column(String(255), unique = True, nullable = True)
     prize_id: Mapped[int] = mapped_column(ForeignKey('prizes.id'), nullable = True)
     has_spun: Mapped[bool] = mapped_column(default = False)
