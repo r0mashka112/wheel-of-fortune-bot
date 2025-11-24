@@ -9,12 +9,12 @@ from contextlib import asynccontextmanager
 
 from aiogram.types import Update
 
-from app.bot.bot import bot, dp
 from app.config import settings
 from app.database import engine
 from app.api.router import api_router
 from app.pages.router import router_pages
 from app.bot.handlers import router_handlers
+from app.bot.bot import bot, dp, set_bot_commands
 from app.pages.admin import PlayerAdmin, PrizeAdmin
 
 logging.basicConfig(
@@ -34,6 +34,8 @@ async def lifespan(app: FastAPI):
         allowed_updates = dp.resolve_used_update_types(),
         drop_pending_updates = True
     )
+
+    await set_bot_commands()
 
     logging.info(f"Webhook set to {settings.WEBHOOK_URL}")
     yield
