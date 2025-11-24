@@ -60,34 +60,23 @@ export const spinWheel = async (player) => {
             };
         }
 
-        return new Promise((resolve, reject) => {
-            try {
-                const rotation = Math.ceil(Math.random() * 7200);
-                wheel.style.transform = `rotate(${rotation}deg)`;
+        return new Promise((resolve) => {
+            const rotation = Math.ceil(Math.random() * 7200);
+            wheel.style.transform = `rotate(${rotation}deg)`;
 
-                const onTransitionEnd = () => {
-                    wheel.removeEventListener('transitionend', onTransitionEnd);
-                    spinBtn.disabled = false;
-
-                    resolve({
-                        success: {
-                            telegram_id: player.telegram_id,
-                            username: player.username,
-                            prize_id: spinResult.data.prize.id,
-                            prize: spinResult.data.prize.name
-                        }
-                    });
-                };
-
-                wheel.addEventListener(
-                    'transitionend',
-                    onTransitionEnd,
-                    { once: true }
-                );
-            } catch (animationError) {
+            wheel.addEventListener('transitionend', () => {
                 spinBtn.disabled = false;
-                reject({ error: 'Ошибка при запуске анимации: ' + animationError });
-            }
+                resolve({
+                    'success': {
+                        telegram_id: player.telegram_id,
+                        username: player.username,
+                        prize_id: spinResult.prize.id,
+                        prize: spinResult.data.prize.name
+                    }
+                });
+            }, {
+                once: true
+            });
         });
     } catch (error) {
         clearTimeout(timeoutId);

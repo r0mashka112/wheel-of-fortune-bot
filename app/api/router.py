@@ -5,6 +5,8 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, HTTPException
 
+from aiogram.exceptions import TelegramBadRequest
+
 from app.bot.bot import bot
 from app.api.dao import PlayerDAO
 from app.core.enums import SpinStatus
@@ -164,8 +166,11 @@ async def spin_result(request: Request):
             start = 1
         )
 
-    except Exception as error:
-        logging.error(f"Failed to delete messages for {telegram_id}: {error}")
+    except TelegramBadRequest as error:
+        if "message to delete not found" in str(error):
+            logging.warning(f"Message from Chat ID: {telegram_id} already deleted or not found")
+        else:
+            logging.error("Telegram error", exc_info = error)
 
     message_texts = [
         "✨ Спасибо за участие в розыгрыше Biomirix!",

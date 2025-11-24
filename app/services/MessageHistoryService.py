@@ -1,6 +1,8 @@
 import logging
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
+
 from app.database import redis
 
 
@@ -36,8 +38,12 @@ class MessageHistoryService:
             try:
                 await bot.delete_message(chat_id = chat_id, message_id = message_id)
                 await self._clear_by(chat_id = chat_id, message_id = message_id)
-            except Exception as error:
-                logging.error(f"Can't delete message {message_id}", exc_info = error)
+            except TelegramBadRequest as error:
+                if "message to delete not found" in str(error):
+                    logging.warning(f"Message {message_id} already deleted or not found")
+                    await self._clear_by(chat_id, message_id)
+                else:
+                    logging.error("Telegram error", exc_info = error)
 
 
 message_history_service = MessageHistoryService(redis_client = redis)
