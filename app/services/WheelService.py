@@ -1,47 +1,63 @@
 import random
+import logging
+from typing import Dict, Any, Optional, Tuple
+
 from app.api.models import Prize
 from app.api.dao import PlayerDAO, PrizeDAO
+from app.core.enums import SpinStatus
 
 
 class WheelService:
     @staticmethod
-    async def spin(telegram_id: int, username: str) -> dict:
-        player = await PlayerDAO.find_one_or_none(**{
-            'telegram_id': telegram_id,
-            'username': username
-        })
+    async def spin(telegram_id: int, username: str) -> Tuple[SpinStatus, Optional[Dict[str, Any]]]:
+        try:
+            player = await PlayerDAO.find_one_or_none(**{
+                'telegram_id': telegram_id,
+                'username': username
+            })
 
-        if not player:
-            raise ValueError("Player not found")
+            if not player:
+                return SpinStatus.PLAYER_NOT_FOUND, None
 
-        if player.has_spun:
-            raise ValueError("You have already spun the wheel")
+            if player.has_spun:
+                return SpinStatus.ALREADY_SPUN, None
 
-        available_prizes = await PrizeDAO.get_available_prizes()
+            available_prizes = await PrizeDAO.get_available_prizes()
 
-        if not available_prizes:
-            raise ValueError("No prizes available")
+            if not available_prizes:
+                return SpinStatus.NO_PRIZES, None
 
-        random_prize = WheelService._select_random_prize(available_prizes)
+            selected_prize = WheelService._select_random_prize(available_prizes)
 
-        await PlayerDAO.update(
-            {
-                "has_spun": True,
-                "prize_id": random_prize.id
-            },
-            telegram_id = telegram_id
-        )
+            await PlayerDAO.update(
+                {
+                    "has_spun": True,
+                    "prize_id": selected_prize.id
+                },
+                telegram_id = telegram_id
+            )
 
-        await PrizeDAO.decrement_quantity(random_prize.id)
+            await PrizeDAO.decrement_quantity(selected_prize.id)
 
-        return {
-            "status": "success",
-            "prize": {
-                "id": random_prize.id,
-                "name": random_prize.name
-            },
-            "player": player
-        }
+            logging.info(f"Prize assigned: {selected_prize.name} to player {telegram_id}")
+
+            result_data = {
+                "prize": {
+                    "id": selected_prize.id,
+                    "name": selected_prize.name
+                },
+                "player": {
+                    "telegram_id": player.telegram_id,
+                    "username": player.username
+                }
+            }
+
+            return SpinStatus.SUCCESS, result_data
+
+        except Exception as error:
+            logging.error(f"Unexpected error in WheelService.spin for {telegram_id}: {error}")
+
+            return SpinStatus.ERROR, {"error": str(error)}
 
 
     @staticmethod

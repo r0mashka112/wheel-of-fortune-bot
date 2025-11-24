@@ -2,9 +2,20 @@ export const spinWheel = async (player) => {
     const wheel = document.querySelector(".wheel__sectors-container");
     const spinBtn = document.querySelector(".spin-btn");
 
-    try {
-        spinBtn.disabled = true;
+    if (!wheel || !spinBtn) {
+        return { error: 'UI элементы не найдены' };
+    }
 
+    spinBtn.disabled = true;
+
+    const controller = new AbortController();
+    const FETCH_TIMEOUT = 10000;
+    const timeoutId = setTimeout(
+        () => controller.abort(),
+        FETCH_TIMEOUT
+    );
+
+    try {
         const response = await fetch('/api/spin', {
             method: 'POST',
             headers: {
@@ -13,42 +24,81 @@ export const spinWheel = async (player) => {
             body: JSON.stringify({
                 telegram_id: player.telegram_id,
                 username: player.username
-            })
+            }),
+            signal: controller.signal
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            spinBtn.disabled = false;
+        clearTimeout(timeoutId)
 
-            if (error.detail === "You have already spun the wheel") {
-                return {'error': 'Вы уже вращали колесо!'};
-            } else if (error.detail === 'No prizes available') {
-                return {'error': 'Розыгрыш завершился. Все призы закончились'};
+        if (!response.ok) {
+            let detail;
+
+            try {
+                detail = (await response.json()).detail;
+            } catch {
+                detail = `HTTP Status: ${response.status}`;
             }
+
+            const errorMessages = {
+                "You have already spun the wheel": "Вы уже вращали колесо!",
+                "No prizes available at the moment": "Розыгрыш завершился. Все призы закончились",
+                "Player not found": "Пользователь не найден",
+                "Invalid JSON format": "Ошибка формата данных",
+                "Missing required field: telegram_id": "Отсутствует идентификатор пользователя"
+            };
+
+            return {
+                error: errorMessages[detail] || `Ошибка: ${detail}`
+            };
         }
 
         const spinResult = await response.json();
 
-        return new Promise((resolve) => {
-            const rotation = Math.ceil(Math.random() * 7200);
-            wheel.style.transform = `rotate(${rotation}deg)`;
+        if (!spinResult.data?.prize) {
+            return {
+                error: 'Неверный формат ответа от сервера'
+            };
+        }
 
-            wheel.addEventListener('transitionend', () => {
+        return new Promise((resolve, reject) => {
+            try {
+                const rotation = Math.ceil(Math.random() * 7200);
+                wheel.style.transform = `rotate(${rotation}deg)`;
+
+                const onTransitionEnd = () => {
+                    wheel.removeEventListener('transitionend', onTransitionEnd);
+                    spinBtn.disabled = false;
+
+                    resolve({
+                        success: {
+                            telegram_id: player.telegram_id,
+                            username: player.username,
+                            prize_id: spinResult.data.prize.id,
+                            prize: spinResult.data.prize.name
+                        }
+                    });
+                };
+
+                wheel.addEventListener(
+                    'transitionend',
+                    onTransitionEnd,
+                    { once: true }
+                );
+            } catch (animationError) {
                 spinBtn.disabled = false;
-                resolve({
-                    'success': {
-                        telegram_id: player.telegram_id,
-                        username: player.username,
-                        prize_id: spinResult.prize.id,
-                        prize: spinResult.prize.name
-                    }
-                });
-            }, {
-                once: true
-            });
+                reject({ error: 'Ошибка при запуске анимации: ' + animationError });
+            }
         });
     } catch (error) {
+        clearTimeout(timeoutId);
         spinBtn.disabled = false;
-        return {'error': `Ошибка соединения: ${error}`};
+
+        if (error.name === 'AbortError') {
+            return { error: 'Превышено время ожидания ответа' };
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            return { error: 'Ошибка соединения с сервером' };
+        } else {
+            return { error: `Неизвестная ошибка: ${error.message}` };
+        }
     }
 };

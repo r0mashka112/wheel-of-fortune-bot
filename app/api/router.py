@@ -1,8 +1,13 @@
+import asyncio
+import logging
+
 from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 from fastapi import APIRouter, HTTPException
 
 from app.bot.bot import bot
 from app.api.dao import PlayerDAO
+from app.core.enums import SpinStatus
 from app.services.WheelService import WheelService
 
 from app.services.MessageHistoryService import message_history_service
@@ -12,100 +17,200 @@ api_router = APIRouter(prefix = '/api', tags = ['API'])
 
 @api_router.post('/spin')
 async def spin(request: Request):
-    data = await request.json()
+    try:
+        data = await request.json()
+    except ValueError as error:
+        logging.warning(f"Invalid JSON received: {error}")
+
+        raise HTTPException(
+            status_code = 400,
+            detail = "Invalid JSON format"
+        )
 
     telegram_id = data.get("telegram_id")
     username = data.get("username")
 
     if not telegram_id:
-        raise HTTPException(400, "Telegram ID required")
-
-    player = await PlayerDAO.find_one_or_none(
-        telegram_id = telegram_id
-    )
-
-    if not player:
-        new_player = await PlayerDAO.create(
-            telegram_id = telegram_id,
-            username = username
-        )
-    elif player.username != username:
-        await PlayerDAO.update(
-            {"username": username},
-            telegram_id = telegram_id
+        raise HTTPException(
+            status_code = 400,
+            detail = "Missing required field: telegram_id"
         )
 
     try:
-        result = await WheelService.spin(
+        telegram_id = int(telegram_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code = 400,
+            detail = "Parameter telegram_id must be integer"
+        )
+
+    if username is not None:
+        if not isinstance(username, str):
+            raise HTTPException(
+                status_code = 400,
+                detail = "Invalid username type, must be string"
+            )
+
+        username = username.strip()
+
+        if not username:
+            username = None
+
+    try:
+        player = await PlayerDAO.find_one_or_none(
+            telegram_id = telegram_id
+        )
+
+        if not player:
+            new_player = await PlayerDAO.create(
+                telegram_id = telegram_id,
+                username = username
+            )
+        elif player.username != username:
+            await PlayerDAO.update(
+                {"username": username},
+                telegram_id = telegram_id
+            )
+
+        status, result_data = await WheelService.spin(
             telegram_id = telegram_id,
             username = username
         )
 
-        return result
-    except ValueError as error:
-        raise HTTPException(400, str(error))
-    except Exception:
-        raise HTTPException
+        if status == SpinStatus.SUCCESS:
+            logging.info(
+                f"Spin completed successfully for player: {telegram_id}"
+            )
+
+            return JSONResponse(
+                status_code = 200,
+                content = {
+                    "status": "success",
+                    "data": result_data
+                }
+            )
+        elif status == SpinStatus.ALREADY_SPUN:
+            logging.warning(f"Player {telegram_id} already spun the wheel")
+
+            raise HTTPException(
+                status_code = 400,
+                detail = "You have already spun the wheel"
+            )
+        elif status == SpinStatus.NO_PRIZES:
+            logging.warning(f"No prizes available for player {telegram_id}")
+
+            raise HTTPException(
+                status_code = 400,
+                detail = "No prizes available at the moment"
+            )
+
+        elif status == SpinStatus.PLAYER_NOT_FOUND:
+            logging.warning(f"Player not found: {telegram_id}")
+
+            raise HTTPException(
+                status_code = 404,
+                detail = "Player not found"
+            )
+        elif status == SpinStatus.ERROR:
+            logging.error(f"Service error for player {telegram_id}: {result_data.get('error', 'Unknown error')}")
+
+            raise HTTPException(
+                status_code = 500,
+                detail = "Internal server error during spin operation"
+            )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logging.error(f"Database operation failed for {telegram_id}: {error}")
+
+        raise HTTPException(
+            status_code = 500,
+            detail = "Failed to process player data"
+        )
 
 
 @api_router.post('/spin_result')
 async def spin_result(request: Request):
-    data = await request.json()
+    try:
+        data = await request.json()
+
+    except Exception:
+        raise HTTPException(
+            status_code = 400,
+            detail = "Invalid JSON format"
+        )
 
     telegram_id = data.get("telegram_id")
     prize = data.get("prize")
 
-    if not telegram_id or not prize:
-        return {"status": "error", "message": "Invalid data"}
+    if not telegram_id or not isinstance(telegram_id, int):
+        raise HTTPException(
+            status_code = 400,
+            detail = "Missing or invalid required field: telegram_id"
+        )
 
-    await message_history_service.delete_messages(
-        chat_id = telegram_id,
-        bot = bot,
-        start = 1
-    )
+    if not prize or not isinstance(prize, str):
+        raise HTTPException(
+            status_code = 400,
+            detail = "Missing or invalid required field: prize"
+        )
 
     try:
-        msg_1 = await bot.send_message(
+        await message_history_service.delete_messages(
             chat_id = telegram_id,
-            text = "✨ Спасибо за участие в розыгрыше Biomirix!",
-            parse_mode="HTML"
+            bot = bot,
+            start = 1
         )
 
-        msg_2 = await bot.send_message(
-            chat_id = telegram_id,
-            text = f"Ваш приз: <strong>{prize}</strong>",
-            parse_mode = "HTML"
-        )
+    except Exception as error:
+        logging.error(f"Failed to delete messages for {telegram_id}: {error}")
 
-        msg_3 = await bot.send_message(
-            chat_id = telegram_id,
-            text = "У нас сюрприз: после выставки мы проведём ещё один розыгрыш среди всех новых подписчиков канала!"
-        )
+    message_texts = [
+        "✨ Спасибо за участие в розыгрыше Biomirix!",
+        f"Ваш приз: <strong>{prize}</strong>",
+        "У нас сюрприз: после выставки мы проведём ещё один розыгрыш среди всех новых подписчиков канала!",
+        "Кто сможет участвовать?\nТолько те, кто останется с нами в Telegram канале Biomirix.",
+        "Следите за новостями — выберем победителя на следующей неделе!"
+    ]
 
-        msg_4 = await bot.send_message(
-            chat_id = telegram_id,
-            text = (
-                "Кто сможет участвовать?\n"
-                "Только те, кто останется с нами в Telegram канале Biomirix."
+    message_ids = []
+
+    try:
+        for text in message_texts:
+            parse_mode = "HTML" if "<strong>" in text else None
+            message = await bot.send_message(
+                chat_id = telegram_id,
+                text = text,
+                parse_mode = parse_mode
             )
+            message_ids.append(message.message_id)
+
+            await asyncio.sleep(0.1)
+
+    except Exception as error:
+        logging.error(
+            f"Failed to send Telegram messages to {telegram_id}: {error}"
         )
 
-        msg_5 = await bot.send_message(
-            chat_id = telegram_id,
-            text = "Следите за новостями — выберем победителя на следующей неделе!"
+        raise HTTPException(
+            status_code = 500,
+            detail = "Failed to send Telegram messages"
         )
 
+    try:
         await message_history_service.update_by(
             chat_id = telegram_id,
-            message_ids = [
-                msg_1.message_id,
-                msg_2.message_id,
-                msg_3.message_id,
-                msg_4.message_id,
-                msg_5.message_id
-            ]
+            message_ids = message_ids
         )
-    except Exception as error:
-        return {"status": "error", "message": str(error)}
 
-    return {"status": "ok"}
+    except Exception as error:
+        logging.error(
+            f"Failed to update message history for {telegram_id}: {error}"
+        )
+
+    return JSONResponse(
+        status_code = 200,
+        content = {"detail": "ok"}
+    )
